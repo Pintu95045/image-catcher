@@ -7,6 +7,9 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
+// ✅ ADD THIS (image access route)
+app.use('/images', express.static('images'));
+
 const imageDir = path.join(__dirname, 'images');
 if (!fs.existsSync(imageDir)) {
   fs.mkdirSync(imageDir);
